@@ -1,0 +1,3 @@
+[submodule "server/client"]
+	path = server/client
+	url = https://github.com/KCarretto/arsenal-api-python-client.git
