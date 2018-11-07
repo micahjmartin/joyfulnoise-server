@@ -9,7 +9,7 @@ def create_app(**config_overrides):
     and connects it to the database.
     """
     app = Flask(__name__)
-    from server.endpoint import ROUTES
+    from server.routes import ROUTES
     app.register_blueprint(ROUTES)
     app.config.update(config_overrides)
 
